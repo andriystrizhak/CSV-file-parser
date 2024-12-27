@@ -1,0 +1,84 @@
+# Ігнорувати файли, створені Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ігнорувати файли, створені Visual Studio Code
+.vscode/
+
+# Ігнорувати бінарні та об'єктні файли
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Ігнорувати файли Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Ігнорувати файли ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Ігнорувати файли NuGet
+*.nupkg
+# Ігнорувати папку packages, але зберігати файл packages.config
+packages/*
+!packages/packages.config
+
+# Ігнорувати файли збірки
+*.dll
+*.exe
+
+# Ігнорувати файли операційної системи
+.DS_Store
+Thumbs.db
+
+# Ігнорувати тимчасові файли
+*.tmp
+*.swp
+*~
+
+# Ігнорувати файли конфігурації
+*.config
+!packages.config
+
+# Ігнорувати файли журналів
+*.log
