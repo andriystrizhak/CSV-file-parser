@@ -3,6 +3,7 @@ using System.Linq;
 using AutoMapper;
 using CSVParser;
 using CSVParser.Data;
+using CSVParser.Mappers;
 using CSVParser.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,13 +46,9 @@ public class Program
                     case "5":
                         Console.Write("Enter PULocationID: ");
                         if (int.TryParse(Console.ReadLine(), out int puLocationId))
-                        {
                             FilterTripsByPULocationID(context, puLocationId);
-                        }
                         else
-                        {
                             Console.WriteLine("Invalid input. Please enter a valid number.");
-                        }
                         break;
                     case "q":
                         continueRunning = false;
@@ -67,13 +64,6 @@ public class Program
 
     private static void ImportDataFromCsv(CSVParserDbContext context)
     {
-        var config = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<TripRecordToTripMap>();
-        });
-
-        IMapper mapper = config.CreateMapper();
-
         Console.Write("Enter the path to the CSV file: ");
         string? filePath = Console.ReadLine();
 
@@ -83,21 +73,23 @@ public class Program
             return;
         }
 
-        try
-        {
-            var csvReader = new CsvReader();
-            var tripRecords = csvReader.ReadCsv(filePath);
+        var csvReader = new CsvReaderService();
+        var duplicateHandler = new DuplicateHandler();
+        var tripService = new TripService(context);
 
-            var tripService = new TripService(context);
-            tripService.BulkInsertTripsAsync(mapper.Map<IEnumerable<Trip>>(tripRecords)).Wait();
+        var config = new MapperConfiguration(cfg => cfg.AddProfile<TripRecordToTripMap>());
+        var mapper = config.CreateMapper();
 
-            Console.WriteLine("Data imported successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred while importing data: {ex.Message}");
-            throw;
-        }
+        var records = csvReader.ReadCsv(filePath);
+        var (uniqueRecords, duplicates) = duplicateHandler.ProcessRecords(records);
+
+        var uniqueTrips = mapper.Map<IEnumerable<Trip>>(uniqueRecords);
+
+        duplicateHandler.WriteDuplicatesToCsv(duplicates, "duplicates.csv");
+
+        tripService.BulkInsertTripsAsync(uniqueTrips).Wait();
+
+        Console.WriteLine($"Imported {uniqueRecords.Count()} unique records. {duplicates.Count()} duplicates were removed and saved to duplicates.csv");
     }
 
     private static void GetPULocationWithHighestTip(CSVParserDbContext context)
@@ -123,7 +115,7 @@ public class Program
 
         Console.WriteLine("Top 100 longest trips by distance:");
         foreach (var trip in trips)
-            Console.WriteLine($"Trip ID: {trip.Id}, Distance: {trip.TripDistance}");
+            Console.WriteLine($"Trip ID: {trip.Id}, Distance: {trip.TripDistance:F2}");
     }
 
     private static void GetTop100LongestTripsByDuration(CSVParserDbContext context)
@@ -151,6 +143,6 @@ public class Program
 
         Console.WriteLine($"Trips with PULocationID {pulocationId}:");
         foreach (var trip in trips)
-            Console.WriteLine($"Trip ID: {trip.Id}, Distance: {trip.TripDistance}, Tip: {trip.TipAmount:C}");
+            Console.WriteLine($"Trip ID: {trip.Id}, Distance: {trip.TripDistance:F2} miles, Tip: {trip.TipAmount:C2}");
     }
 }

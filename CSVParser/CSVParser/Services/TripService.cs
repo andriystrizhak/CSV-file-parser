@@ -2,62 +2,46 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Globalization;
 
 namespace CSVParser.Services;
 
-public class TripService
+public class TripService(CSVParserDbContext context)
 {
-    private readonly CSVParserDbContext _context;
-
-    public TripService(CSVParserDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<List<Trip>> GetAllTripsAsync()
-    {
-        return await _context.Trips.ToListAsync();
-    }
+    public async Task<List<Trip>> GetAllTripsAsync() 
+        => await context.Trips.ToListAsync();
 
     public async Task<Trip?> GetTripByIdAsync(int id)
-    {
-        return await _context.Trips.FindAsync(id);
-    }
+        => await context.Trips.FindAsync(id);
 
     public async Task AddTripAsync(Trip trip)
     {
-        await _context.Trips.AddAsync(trip);
-        await _context.SaveChangesAsync();
+        await context.Trips.AddAsync(trip);
+        await context.SaveChangesAsync();
     }
 
     public async Task AddTripsAsync(IEnumerable<Trip> trips)
     {
-        await _context.Trips.AddRangeAsync(trips);
-        await _context.SaveChangesAsync();
+        await context.Trips.AddRangeAsync(trips);
+        await context.SaveChangesAsync();
     }
 
     public async Task<List<Trip>> GetTop100LongestTripsByDistanceAsync()
-    {
-        return await _context.Trips
+        => await context.Trips
             .OrderByDescending(t => t.TripDistance)
             .Take(100)
             .ToListAsync();
-    }
 
     public async Task<List<Trip>> GetTop100LongestTripsByDurationAsync()
-    {
-        return await _context.Trips
+        => await context.Trips
             .OrderByDescending(t => EF.Functions.DateDiffSecond(t.PickupDatetime, t.DropoffDatetime))
             .Take(100)
             .ToListAsync();
-    }
 
     public async Task<double> GetAverageTipAmountByPULocationIdAsync(int puLocationId)
-    {
-        return await _context.Trips
+        => await context.Trips
             .Where(t => t.PULocationID == puLocationId)
             .AverageAsync(t => (double)t.TipAmount);
-    }
 
     public async Task BulkInsertTripsAsync(IEnumerable<Trip> trips)
     {
@@ -75,9 +59,10 @@ public class TripService
 
     private void SetupDataTableColumns(DataTable dataTable)
     {
+        dataTable.Columns.Add("Id", typeof(int));
         dataTable.Columns.Add("PickupDatetime", typeof(DateTime));
         dataTable.Columns.Add("DropoffDatetime", typeof(DateTime));
-        dataTable.Columns.Add("PassengerCount", typeof(int?));
+        dataTable.Columns.Add("PassengerCount", typeof(int));
         dataTable.Columns.Add("TripDistance", typeof(float));
         dataTable.Columns.Add("StoreAndFwdFlag", typeof(string));
         dataTable.Columns.Add("PULocationID", typeof(int));
@@ -90,16 +75,11 @@ public class TripService
     {
         foreach (var trip in trips)
         {
-            if (trip.PickupDatetime == default || trip.DropoffDatetime == default)
-            {
-                Console.WriteLine($"Warning: Invalid datetime for trip. PickupDatetime: {trip.PickupDatetime}, DropoffDatetime: {trip.DropoffDatetime}");
-                continue; // Skip this record
-            }
-
             dataTable.Rows.Add(
+                DBNull.Value,
                 trip.PickupDatetime,
-                trip.DropoffDatetime,
-                trip.PassengerCount.HasValue ? (object)trip.PassengerCount.Value : DBNull.Value, trip.TripDistance,
+                trip.DropoffDatetime, 
+                trip.PassengerCount.HasValue ? trip.PassengerCount.Value : (object)DBNull.Value,
                 trip.TripDistance,
                 trip.StoreAndFwdFlag,
                 trip.PULocationID,
@@ -112,7 +92,7 @@ public class TripService
 
     private async Task BulkInsertDataTableAsync(DataTable dataTable)
     {
-        var connectionString = _context.Database.GetConnectionString();
+        var connectionString = context.Database.GetConnectionString();
         using (var connection = new SqlConnection(connectionString))
         {
             await connection.OpenAsync();
@@ -120,7 +100,10 @@ public class TripService
             using (var bulkCopy = new SqlBulkCopy(connection))
             {
                 bulkCopy.DestinationTableName = "Trips";
-                bulkCopy.BatchSize = 10000;
+                bulkCopy.BatchSize = 1000;
+
+                for (int i = 0; i < dataTable.Columns.Count; i++)
+                    bulkCopy.ColumnMappings.Add(dataTable.Columns[i].ColumnName, dataTable.Columns[i].ColumnName);
 
                 await bulkCopy.WriteToServerAsync(dataTable);
             }

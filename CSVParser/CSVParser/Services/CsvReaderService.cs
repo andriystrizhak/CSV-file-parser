@@ -1,11 +1,12 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using CSVParser.Mappers;
 using CSVParser.Models;
 using System.Globalization;
 
-namespace CSVParser;
+namespace CSVParser.Services;
 
-public class CsvReader
+public class CsvReaderService
 {
     public IEnumerable<TripRecord> ReadCsv(string filePath)
     {
@@ -14,15 +15,13 @@ public class CsvReader
             HasHeaderRecord = true,
             MissingFieldFound = null,
             Delimiter = ",",
-            Mode = CsvMode.RFC4180,
         };
 
         using (var reader = new StreamReader(filePath))
-        using (var csv = new CsvHelper.CsvReader(reader, configuration))
+        using (var csv = new CsvReader(reader, configuration))
         {
             csv.Context.RegisterClassMap<CsvToTripRecordMap>();
-            var records = csv.GetRecords<TripRecord>();
-            foreach (var record in records)
+            foreach (var record in csv.GetRecords<TripRecord>())
             {
                 yield return record;
             }

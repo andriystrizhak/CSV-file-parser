@@ -2,7 +2,7 @@
 using CSVParser.Data;
 using CSVParser.Models;
 
-namespace CSVParser;
+namespace CSVParser.Mappers;
 
 public class TripRecordToTripMap : Profile
 {

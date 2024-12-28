@@ -1,7 +1,7 @@
 ﻿using CsvHelper.Configuration;
 using CSVParser.Models;
 
-namespace CSVParser;
+namespace CSVParser.Mappers;
 
 public class CsvToTripRecordMap : ClassMap<TripRecord>
 {
