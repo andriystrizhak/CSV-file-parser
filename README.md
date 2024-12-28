@@ -45,5 +45,6 @@ WHERE PassengerCount IS NOT NULL;
 
 ## Number of rows
 
-After running the program with the provided sample data, the number of rows in the Trips table is: **29889**
+After running the program with the provided sample data, the number of rows in the Trips table is: **29889**.
+
 **111** duplicates were removed and saved to `duplicates.csv`.
